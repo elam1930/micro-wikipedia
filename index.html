@@ -179,8 +179,7 @@
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18 9 9 0 0 0 0-18zm0 16a7 7 0 0 1 0-14 7 7 0 0 1 0 14z"/></svg>
 </div>
 
-<footer>Made with ❤️ by Your Name</footer>
-
+<footer>Made with ❤️ by Mussaliev Eldar</footer>
 <script>
   const btn = document.getElementById('explainBtn');
   const input = document.getElementById('term');
@@ -188,8 +187,9 @@
   const loader = document.getElementById('loader');
   const themeToggle = document.getElementById('themeToggle');
 
+  const API_KEY = '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'; 
   function setLoading(loading) {
-    if(loading) {
+    if (loading) {
       loader.style.display = 'block';
       btn.disabled = true;
       result.textContent = '';
@@ -199,12 +199,11 @@
     }
   }
 
-  // Simple typing effect to show response nicely
   async function typeEffect(text) {
     result.textContent = '';
     for (let i = 0; i < text.length; i++) {
       result.textContent += text.charAt(i);
-      await new Promise(r => setTimeout(r, 20));
+      await new Promise(resolve => setTimeout(resolve, 20));
     }
   }
 
@@ -214,6 +213,7 @@
       alert('Please enter a term!');
       return;
     }
+
     setLoading(true);
 
     try {
@@ -221,24 +221,31 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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'
+          'Authorization': `Bearer ${API_KEY}`
         },
         body: JSON.stringify({
           model: 'gpt-3.5-turbo',
           messages: [
-            { role: 'system', content: 'You explain complicated things very simply, as if to a 10-year-old child.' },
-            { role: 'user', content: `Explain the term: ${term}` }
+            {
+              role: 'system',
+              content: 'You are a helpful assistant who explains any word in very simple language, like for a 10-year-old.'
+            },
+            {
+              role: 'user',
+              content: `What is "${term}"? Please explain it in a short, clear, and friendly way.`
+            }
           ],
-          max_tokens: 250,
-          temperature: 0.7
+          max_tokens: 150,
+          temperature: 0.5
         })
       });
 
       const data = await response.json();
-      const explanation = data.choices?.[0]?.message?.content || "Sorry, I couldn't find an explanation.";
+
+      const explanation = data?.choices?.[0]?.message?.content?.trim() || "Sorry, no explanation found.";
       await typeEffect(explanation);
-    } catch (e) {
-      result.textContent = 'Error: ' + e.message;
+    } catch (err) {
+      result.textContent = 'Error: ' + err.message;
     } finally {
       setLoading(false);
     }
@@ -252,33 +259,20 @@
   // Theme toggle
   themeToggle.addEventListener('click', toggleTheme);
   themeToggle.addEventListener('keypress', (e) => {
-    if(e.key === 'Enter' || e.key === ' ') toggleTheme();
+    if (e.key === 'Enter' || e.key === ' ') toggleTheme();
   });
 
   function toggleTheme() {
-    if(document.body.classList.contains('dark')) {
-      document.body.classList.remove('dark');
-      document.body.classList.add('light');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.body.classList.remove('light');
-      document.body.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
+    document.body.classList.toggle('dark');
+    document.body.classList.toggle('light');
+    const theme = document.body.classList.contains('dark') ? 'dark' : 'light';
+    localStorage.setItem('theme', theme);
   }
 
   // Load saved theme
   (() => {
     const savedTheme = localStorage.getItem('theme');
-    if(savedTheme === 'light') {
-      document.body.classList.remove('dark');
-      document.body.classList.add('light');
-    } else {
-      document.body.classList.remove('light');
-      document.body.classList.add('dark');
-    }
+    document.body.classList.add(savedTheme === 'light' ? 'light' : 'dark');
   })();
 </script>
-
-</body>
 </html>
