@@ -181,98 +181,39 @@
 
 <footer>Made with ❤️ by Mussaliev Eldar</footer>
 <script>
-  const btn = document.getElementById('explainBtn');
-  const input = document.getElementById('term');
-  const result = document.getElementById('result');
-  const loader = document.getElementById('loader');
-  const themeToggle = document.getElementById('themeToggle');
+async function explain() {
+  const term = input.value.trim();
+  if (!term) return alert('Введите слово!');
 
-  const API_KEY = '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'; 
-  function setLoading(loading) {
-    if (loading) {
-      loader.style.display = 'block';
-      btn.disabled = true;
-      result.textContent = '';
-    } else {
-      loader.style.display = 'none';
-      btn.disabled = false;
-    }
+  setLoading(true);
+  
+  try {
+    // Используем бесплатный прокси (не требует твоего ключа)
+    const response = await fetch(`https://chatgpt-api.shn.hk/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'user',
+            content: `Объясни слово "${term}" простым языком. Ответ на русском.`
+          }
+        ]
+      })
+    });
+    
+    const data = await response.json();
+    const explanation = data.choices[0].message.content;
+    await typeEffect(explanation);
+    
+  } catch (err) {
+    result.textContent = 'Ошибка: ' + err.message;
+  } finally {
+    setLoading(false);
   }
-
-  async function typeEffect(text) {
-    result.textContent = '';
-    for (let i = 0; i < text.length; i++) {
-      result.textContent += text.charAt(i);
-      await new Promise(resolve => setTimeout(resolve, 20));
-    }
-  }
-
-  async function explain() {
-    const term = input.value.trim();
-    if (!term) {
-      alert('Please enter a term!');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful assistant who explains any word in very simple language, like for a 10-year-old.'
-            },
-            {
-              role: 'user',
-              content: `What is "${term}"? Please explain it in a short, clear, and friendly way.`
-            }
-          ],
-          max_tokens: 150,
-          temperature: 0.5
-        })
-      });
-
-      const data = await response.json();
-
-      const explanation = data?.choices?.[0]?.message?.content?.trim() || "Sorry, no explanation found.";
-      await typeEffect(explanation);
-    } catch (err) {
-      result.textContent = 'Error: ' + err.message;
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  btn.addEventListener('click', explain);
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') explain();
-  });
-
-  // Theme toggle
-  themeToggle.addEventListener('click', toggleTheme);
-  themeToggle.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') toggleTheme();
-  });
-
-  function toggleTheme() {
-    document.body.classList.toggle('dark');
-    document.body.classList.toggle('light');
-    const theme = document.body.classList.contains('dark') ? 'dark' : 'light';
-    localStorage.setItem('theme', theme);
-  }
-
-  // Load saved theme
-  (() => {
-    const savedTheme = localStorage.getItem('theme');
-    document.body.classList.add(savedTheme === 'light' ? 'light' : 'dark');
-  })();
+}
 </script>
 </html>
