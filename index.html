@@ -118,98 +118,104 @@
 
     <script>
         const API_KEY = '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'; // Замените на ваш ключ OpenAI
-           maxTokens: 100,
-    systemPrompt: "You are Micro Wikipedia. Explain concepts in 1 sentence.",
-    errorMessage: "Sorry, I couldn't get an explanation. Try another word!"
+     MAX_TOKENS: 60,
+    SYSTEM_PROMPT: "You are Micro Wikipedia. Answer in 1 short sentence.",
+    FALLBACK_ANSWERS: {
+      "red": "Red is the color at the end of the visible light spectrum.",
+      "error": "Sorry, service is unavailable. Try again later."
+    }
   };
 
-  // Элементы DOM
-  const ui = {
+  // 2. Элементы интерфейса
+  const UI = {
     searchBtn: document.getElementById('searchBtn'),
     searchInput: document.getElementById('searchInput'),
     resultText: document.getElementById('resultText'),
     loader: document.getElementById('loader')
   };
 
-  // Главная функция запроса
+  // 3. Основная функция
   async function getExplanation() {
-    const query = ui.searchInput.value.trim();
+    const query = UI.searchInput.value.trim().toLowerCase();
     if (!query) return;
 
-    // Показываем состояние загрузки
-    ui.searchBtn.disabled = true;
-    ui.loader.style.display = 'block';
-    ui.resultText.textContent = '';
+    // Показываем загрузку
+    UI.searchBtn.disabled = true;
+    UI.loader.style.display = 'block';
+    UI.resultText.textContent = '';
 
     try {
-      const response = await callChatGPTAPI(query);
-      const explanation = processAPIResponse(response);
-      
-      typeWriter(explanation);
-      
+      // Сначала проверяем локальные ответы
+      if (CONFIG.FALLBACK_ANSWERS[query]) {
+        typeWriter(CONFIG.FALLBACK_ANSWERS[query]);
+        return;
+      }
+
+      // Запрос к OpenAI
+      const response = await fetchOpenAI(query);
+      typeWriter(response);
+
     } catch (error) {
-      console.error('API Error:', error);
-      ui.resultText.textContent = config.errorMessage;
+      console.error('Error:', error);
+      UI.resultText.textContent = CONFIG.FALLBACK_ANSWERS.error;
     } finally {
-      ui.searchBtn.disabled = false;
-      ui.loader.style.display = 'none';
+      UI.searchBtn.disabled = false;
+      UI.loader.style.display = 'none';
     }
   }
 
-  // Обработчик API
-  async function callChatGPTAPI(query) {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: config.systemPrompt },
-          { role: "user", content: `Explain "${query}"` }
-        ],
-        max_tokens: config.maxTokens,
-        temperature: 0.7
-      })
-    });
+  // 4. Запрос к OpenAI с полной защитой
+  async function fetchOpenAI(query) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${CONFIG.API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: CONFIG.SYSTEM_PROMPT },
+            { role: "user", content: `Explain "${query}"` }
+          ],
+          max_tokens: CONFIG.MAX_TOKENS
+        })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'API request failed');
+      const data = await response.json();
+      
+      // Полная проверка ответа
+      if (!response.ok || !data?.choices?.[0]?.message?.content) {
+        throw new Error(data.error?.message || 'Invalid API response');
+      }
+      
+      return data.choices[0].message.content;
+
+    } catch (error) {
+      // Возвращаем локальный ответ если API не сработал
+      return CONFIG.FALLBACK_ANSWERS[query] || CONFIG.FALLBACK_ANSWERS.error;
     }
-
-    return await response.json();
   }
 
-  // Обработчик ответа
-  function processAPIResponse(response) {
-    if (!response?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid API response structure');
-    }
-    return response.choices[0].message.content;
-  }
-
-  // Анимация печати
+  // 5. Анимация печати текста
   function typeWriter(text) {
     let i = 0;
-    ui.resultText.textContent = '';
+    UI.resultText.textContent = '';
     
     function typing() {
       if (i < text.length) {
-        ui.resultText.textContent += text.charAt(i);
+        UI.resultText.textContent += text.charAt(i);
         i++;
         setTimeout(typing, 20);
       }
     }
-    
     typing();
   }
 
-  // Обработчики событий
-  ui.searchBtn.addEventListener('click', getExplanation);
-  ui.searchInput.addEventListener('keypress', (e) => {
+  // 6. Обработчики событий
+  UI.searchBtn.addEventListener('click', getExplanation);
+  UI.searchInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') getExplanation();
   });
 </script>
