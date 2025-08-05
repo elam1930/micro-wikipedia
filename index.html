@@ -118,51 +118,59 @@
 
     <script>
         const API_KEY = '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'; // Замените на ваш ключ OpenAI
-        const searchBtn = document.getElementById('searchBtn');
-        const searchInput = document.getElementById('searchInput');
-        const resultText = document.getElementById('resultText');
-        const loader = document.getElementById('loader');
+         const searchBtn = document.getElementById('searchBtn');
+  const searchInput = document.getElementById('searchInput');
+  const resultText = document.getElementById('resultText');
+  const loader = document.getElementById('loader');
 
-        async function getExplanation() {
-            const query = searchInput.value.trim();
-            if (!query) return;
+  async function getExplanation() {
+    const query = searchInput.value.trim();
+    if (!query) return;
 
-            searchBtn.disabled = true;
-            loader.style.display = 'block';
-            resultText.textContent = '';
+    searchBtn.disabled = true;
+    loader.style.display = 'block';
+    resultText.textContent = '';
 
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-3.5-turbo",
-                        messages: [
-                            {
-                                role: "system",
-                                content: "You are Micro Wikipedia. Explain concepts simply in 1-2 sentences."
-                            },
-                            {
-                                role: "user",
-                                content: `Explain "${query}" in simple terms.`
-                            }
-                        ],
-                        max_tokens: 150
-                    })
-                });
-
-                const data = await response.json();
-                typeWriter(data.choices[0].message.content);
-            } catch (error) {
-                resultText.textContent = `Error: ${error.message}`;
-            } finally {
-                searchBtn.disabled = false;
-                loader.style.display = 'none';
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "You are Micro Wikipedia. Explain concepts simply in 1-2 sentences."
+            },
+            {
+              role: "user",
+              content: `Explain "${query}" in simple terms.`
             }
-        }
+          ],
+          max_tokens: 150
+        })
+      });
+
+      const data = await response.json();
+      
+      // Добавлена проверка ответа
+      if (!data.choices || !data.choices[0]) {
+        throw new Error('Invalid response from API');
+      }
+      
+      typeWriter(data.choices[0].message.content);
+      
+    } catch (error) {
+      resultText.textContent = `Error: ${error.message}`;
+      console.error('API Error:', error); // Для отладки
+    } finally {
+      searchBtn.disabled = false;
+      loader.style.display = 'none';
+    }
+  }
 
         function typeWriter(text) {
             let i = 0;
