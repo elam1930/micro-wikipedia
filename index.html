@@ -1,16 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Мини-Википедия</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AI Chat</title>
 </head>
 <body>
-    <div class="container">
-        <h1>🧠 Мини-Википедия</h1>
-        <input type="text" id="question" placeholder="Спросите что-нибудь...">
-        <button onclick="ask()">Спросить</button>
-        <div id="answer"></div>
-    </div>
-    <script src="script.js"></script>
+    <h1>GPT-OSS-20B Chat</h1>
+    <textarea id="userInput" placeholder="Напиши что-то..."></textarea>
+    <button onclick="sendToAI()">Отправить</button>
+    <pre id="response"></pre>
+
+    <script>
+    async function sendToAI() {
+        let input = document.getElementById("userInput").value;
+        let responseBox = document.getElementById("response");
+
+        const HF_TOKEN = "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"; // вставь сюда токен из Hugging Face
+        const MODEL_URL = "https://api-inference.huggingface.co/models/openai/gpt-oss-20b";
+
+        let response = await fetch(MODEL_URL, {
+            method: "POST",
+            headers: {
+                "Authorization": Bearer ${HF_TOKEN},
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ inputs: input })
+        });
+
+        let result = await response.json();
+        responseBox.textContent = result[0]?.generated_text || "Ошибка";
+    }
+    </script>
 </body>
 </html>
